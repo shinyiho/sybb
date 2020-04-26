@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>HTML CANVAS</title>
+	<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+	<canvas id="draw"></canvas>
+
+	<script>
+		const canvas = document.querySelector("#draw");
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
+		const ctx = canvas.getContext("2d");
+		let colorArray = [
+			'#0528F2',
+			'#021E73',
+			'#F2E205',
+			'#F2CB05'
+
+		];
+		let isDrawing = false;
+		let recs = [];
+		let xStart;
+		let yStart;
+		let xEnd;
+		let yEnd;
+		let width;
+		let height;
+
+		window.addEventListener("mousedown", (e) => {
+			width = 0;
+			height = 0;
+			xStart = e.clientX;
+			yStart = e.clientY;
+			isDrawing = true;
+		})
+		window.addEventListener("mousemove", setRec);
+		window.addEventListener("mouseup", (rec) => {
+			isDrawing = false;
+			recs.push(new Rec(Math.min(xStart, xEnd), Math.min(yStart, yEnd), width, height));
+		});
+		function setRec(e) {
+			if (isDrawing === true) {
+				ctx.clearRect(0, 0, innerWidth, innerHeight);
+				xEnd = e.clientX;
+				yEnd = e.clientY;
+				width = Math.max(xStart, xEnd) - Math.min(xStart, xEnd)
+				height = Math.max(yStart, yEnd) - Math.min(yStart, yEnd)
+			}
+		}
+
+		function ChildRec(xStart, yStart, width, height, color) {
+			this.degree = 0;
+			this.xStart = xStart;
+			this.yStart = yStart;
+			this.width = width;
+			this.height = height;
+			this.color = color;
+
+		}
+
+		ChildRec.prototype.update = function (dx, dy) {
+			ctx.fillStyle = this.color;
+			ctx.fillRect(this.xStart + dx, this.yStart + dy, this.width, this.height);
+		}
+		ChildRec.prototype.rotateRec = function (dx, dy) {
+			ctx.save();
+			ctx.fillStyle = this.color;
+			ctx.translate(this.xStart + dx + this.width / 2, this.yStart + dy + this.height / 2);
+			ctx.rotate(this.degree*2 * Math.PI / 180);
+			ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+			ctx.restore();
+			if(this.degree===90){
+				this.degree===90
+			}else{
+				this.degree++;
+			}
+			
+		}
+
+
+		function Rec(xStart, yStart, width, height) {
+			this.xStart = xStart;
+			this.yStart = yStart;
+			this.width = width;
+			this.height = height;
+			this.color = colorArray[Math.floor(Math.random() * colorArray.length)];
+
+			this.count = 0;
+			// this.j;
+			this.childRecs = []
+		}
+		Rec.prototype.createChildRec = function (xStart, yStart, width, height) {
+			let w = width;
+			let h = height;
+			w > h ? w = width / 2 : h = height / 2
+			this.childRecs.push(new ChildRec(xStart, yStart, w, h, this.color));
+			this.childRecs.push(new ChildRec(xStart + width - w, yStart + height - h, w, h, this.color));
+		}
+		Rec.prototype.update = function () {
+			if (this.count === 0) {
+				this.createChildRec(this.xStart, this.yStart, this.width, this.height)
+				// console.log(this.childRecs)
+				this.count++
+
+			} else if (this.count < 50) {
+				if (this.width > this.height) {
+					this.childRecs[0].update(-this.count, 0);
+					this.childRecs[1].update(this.count, 0);
+					this.count++;
+					console.log(this.count);
+				} else {
+					this.childRecs[0].update(0, -this.count);
+					this.childRecs[1].update(0, this.count);
+					this.count++;
+					console.log(this.count);
+				}
+			} else if (this.count === 50) {
+				if (this.width > this.height) {
+					this.childRecs[0].update(-50, 0);//split
+					this.createChildRec(this.childRecs[0].xStart - 50, this.childRecs[0].yStart, this.childRecs[0].width, this.childRecs[0].height);
+					this.childRecs[1].rotateRec(50, 0);
+					this.count++;
+					console.log(this.childRecs);
+				} else {
+					this.childRecs[0].update(0, -50);//split
+					this.createChildRec(this.childRecs[0].xStart, this.childRecs[0].yStart - 50, this.childRecs[0].width, this.childRecs[0].height);
+					this.childRecs[1].rotateRec(0, 50);
+					this.count++;
+					console.log(this.childRecs);
+				}
+			}
+			else if (this.count < 100) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].update(0, this.count - 50);
+					this.childRecs[2].update(0, -(this.count - 50));
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].update(this.count - 50, 0);
+					this.childRecs[2].update(-(this.count - 50), 0);
+					this.count++;
+				}
+			} else if (this.count === 100) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, this.count - 50);//rotate
+					this.childRecs[2].update(0, -(this.count - 50));//split
+					this.createChildRec(this.childRecs[2].xStart, this.childRecs[2].yStart - 50, this.childRecs[2].width, this.childRecs[2].height);
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[2].update(-(this.count - 50), 0);//spilt
+					this.createChildRec(this.childRecs[2].xStart - 50, this.childRecs[2].yStart, this.childRecs[2].width, this.childRecs[2].height);
+					this.count++;
+				}
+			} else if (this.count < 150) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, 150);//rotate
+					this.childRecs[5].update(this.count - 100, 0);
+					this.childRecs[4].update(-(this.count - 100), 0);
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[5].update(0, this.count - 100);
+					this.childRecs[4].update(0, -(this.count - 100));
+					this.count++;
+				}
+			}
+			else if (this.count === 150) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, this.count - 50);
+					this.childRecs[4].rotateRec(50 + 75, 0);//rotate
+					this.createChildRec(this.childRecs[5].xStart - 50 - 50, this.childRecs[5].yStart, this.childRecs[5].width, this.childRecs[5].height);
+
+					this.childRecs[5].update(0,0);//split
+					console.log("150")
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[4].rotateRec(0, 50 + 75);//rotate
+					this.createChildRec(this.childRecs[5].xStart, this.childRecs[5].yStart - 50 - 50, this.childRecs[5].width, this.childRecs[5].height);
+					console.log("150")
+					this.childRecs[5].update(0,0);//split
+					this.count++;
+
+
+				}//到這裡大致上確認正確
+			} else if (this.count < 200) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, this.count - 50);//rotate
+					this.childRecs[4].rotateRec(75 + 50, 0);
+					this.childRecs[7].update(0, this.count - 150);
+					this.childRecs[6].update(0, -(this.count - 150));
+					this.count++;
+					console.log("<200>")
+
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[4].rotateRec(0, 75 + 50);
+					this.childRecs[7].update(this.count - 150, 0);
+					this.childRecs[6].update(-(this.count - 150), 0);
+					this.count++;
+					console.log(this.childRecs[6]);
+					console.log("<200>")
+				}
+			} else if (this.count < 250) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, this.count - 50);//rotate
+					this.childRecs[4].rotateRec(75 + 50, 0);
+					this.childRecs[7].update(0, 250 - this.count);
+					this.childRecs[6].update(0, -(250 - this.count));
+					this.count++;
+					console.log("<200>")
+
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[4].rotateRec(0, 75 + 50);
+					this.childRecs[7].update(250 - this.count, 0);
+					this.childRecs[6].update(-(250 - this.count), 0);
+					this.count++;
+					console.log(this.childRecs[6]);
+					console.log("<200>")
+				}
+			} else if (this.count < 300) {
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].rotateRec(0, this.count - 50);//rotate
+					this.childRecs[5].update(300 - this.count, 0);
+					this.childRecs[4].update(-(300 - this.count), 0);
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].rotateRec(this.count - 50, 0);//rotate
+					this.childRecs[5].update(0, 300 - this.count);
+					this.childRecs[4].update(0, -(300 - this.count));
+					this.count++;
+				}
+
+			} else if (this.count <350){
+				if (this.width > this.height) {
+					this.childRecs[1].rotateRec(50, 0);
+					this.childRecs[3].update(0, 350-this.count);
+					this.childRecs[2].update(0, -(350-this.count));
+					this.count++;
+				} else {
+					this.childRecs[1].rotateRec(0, 50);
+					this.childRecs[3].update(350-this.count, 0);
+					this.childRecs[2].update(-(350-this.count), 0);
+					this.count++;
+				}
+			}else if (this.count <400){
+				if (this.width > this.height) {
+					this.childRecs[0].update(-(400-this.count), 0);
+					this.childRecs[1].update(400-this.count, 0);
+					this.count++;
+					console.log(this.count);
+				} else {
+					this.childRecs[0].update(0, -(400-this.count));
+					this.childRecs[1].update(0, 400-this.count);
+					this.count++;
+					console.log(this.count);
+				}
+			}
+
+		}
+		//random的設定
+		//+75+50???
+
+		// window.addEventListener("mousedown", (e) => {
+		// 	timer.start();
+		// })
+
+		// function Timer(limit) {
+		// 	this.state = 0
+		// 	this.limit = limit
+		// 	this.value = 0
+		// 	this.startTime
+		// 	this.pow = 0.5
+		// }
+		// Timer.prototype.getValue = function () {
+		// 	if (this.state === 0) {
+		// 		return this.value
+		// 	}
+		// 	this.value = Math.pow((Date.now() - this.startTime) / this.limit, this.pow)
+		// 	if (this.value > 1) {
+		// 		this.value = 1
+		// 		this.state = 0
+		// 	}
+		// 	return this.value
+		// }
+		// Timer.prototype.start = function () {
+		// 	this.startTime = Date.now()
+		// 	this.value = 0
+		// 	this.state = 1
+		// }
+
+		// const timer = new Timer(1000)
+		// let x = 0
+		// let now = Date.now()
+
+		// function update() {
+		// 	x = timer.getValue() * 500;
+		// }
+		
+		function animate() {
+
+			
+			ctx.clearRect(0, 0, innerWidth, innerHeight);
+			if (isDrawing) {
+				ctx.fillStyle = "rgba(0,0,0,1)";
+				ctx.fillRect(Math.min(xStart, xEnd), Math.min(yStart, yEnd), width, height);
+			}
+			recs.forEach(rec => rec.update())
+
+
+			// update()
+			// ctx.fillStyle = "rgba(255, 0, 0, 1)"
+			// ctx.fillRect(50 + x, 50, 50, 50)
+
+			// millis = Date.now()
+			
+			requestAnimationFrame(animate);
+		}
+		animate();
+	</script>
+
+</body>
+
+</html>
